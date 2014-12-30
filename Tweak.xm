@@ -1,3 +1,9 @@
+// Forked from https://github.com/sharedRoutine/MapStep
+
+static NSTimer * _playTimer;
+static BOOL wasPlayingFlag;
+static BOOL shouldPlayFlag;
+
 @interface SBMediaController : NSObject
 +(id)sharedInstance;
 -(BOOL)pause;
@@ -14,14 +20,14 @@
 @end
 
 #define SRMediaController ((SBMediaController *)[%c(SBMediaController) sharedInstance])
-#define SRPlayNotification @"com.sharedroutine.mapstep.play.notification"
-#define SRPauseNotification @"com.sharedroutine.mapstep.pause.notification"
+#define SRPlayNotification @"com.inonio.mapstep.play.notification"
+#define SRPauseNotification @"com.inonio.mapstep.pause.notification"
 #define Post_Notification(name) [[NSDistributedNotificationCenter defaultCenter] postNotificationName:name object:nil]
 
 %group MapStep
 %hook MNVoiceController
 
--(void)_speak:(id)speech {
+-(void)speak:(id)arg1 completionBlock:(/*^block*/ id)arg2 {
 	Post_Notification(SRPauseNotification); //notification to pause playing send to springboard
 	%orig;
 }
@@ -45,30 +51,45 @@
 
 @implementation SRMapStep
 
+-(void)debug:(NSString *)msg {
+	//NSLog(@"**** %@, should: %d, was: %d", msg, shouldPlayFlag, wasPlayingFlag);
+}
+
 -(void)notificationReceived:(NSNotification *)notification {
-
 	if ([notification.name isEqualToString:SRPauseNotification]) {
-
+		[self debug:@"SRPauseNotification"];
+		shouldPlayFlag = false;
 		if ([SRMediaController isPlaying]) {
+			[self debug:@"isPlaying is true, pausing"];
+			wasPlayingFlag = true;
 			[SRMediaController pause];
 		}
-
 	}
 
 	if ([notification.name isEqualToString:SRPlayNotification]) {
-
-		if ([SRMediaController isPaused]) {
-			[SRMediaController play];
-		}
-
+		[self debug:@"SRPlayNotification"];
+		shouldPlayFlag = true;
+		_playTimer = [NSTimer scheduledTimerWithTimeInterval:1 target:self selector:@selector(playAudio) userInfo:nil repeats:NO ];
 	}
 
+}
+
+-(void)playAudio {
+	[self debug:@"playAudio"];
+	if (wasPlayingFlag && shouldPlayFlag) {
+		[self debug:@"playAudio: flags ok"];
+  	if ([SRMediaController isPaused]) {
+  		[self debug:@"isPaused is true, playing"];
+  		wasPlayingFlag = false;
+  		shouldPlayFlag = false;
+			[SRMediaController play];
+		}
+  }
 }
 
 @end
 
 %ctor {
-
 	NSString *bundleID = [NSBundle mainBundle].bundleIdentifier;
 	if (bundleID && [bundleID isEqualToString:@"com.apple.springboard"]) {
 		SRMapStep *mapStep = [[SRMapStep alloc] init]; //it is running all the time to receive our notifications

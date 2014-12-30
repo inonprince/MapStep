@@ -1,9 +1,10 @@
-Package: com.sharedroutine.mapstep
-Name: MapStep
+Package: com.inonio.mapstep
+Name: MapStep8
 Depends: mobilesubstrate
+Conflicts: com.sharedroutine.mapstep
 Version: 0.0.1
 Architecture: iphoneos-arm
-Description: An awesome MobileSubstrate tweak!
-Maintainer: Jack
-Author: Jack
+Description: Pause "Now Playing" Media when Maps' Voice tells you a direction and continue when it finished. Forked from github.com/sharedRoutine/MapStep
+Maintainer: Inon Prince
+Author: Inon Prince
 Section: Tweaks
